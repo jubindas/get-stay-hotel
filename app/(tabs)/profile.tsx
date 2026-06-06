@@ -1,4 +1,6 @@
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import {
   Image,
@@ -23,6 +25,10 @@ const COLORS = {
 };
 
 export default function Profile() {
+  const { token, user, logout } = useAuth();
+
+  console.log("the token is", token);
+
   const MenuOption = ({
     icon,
     title,
@@ -53,17 +59,37 @@ export default function Profile() {
           <View style={styles.imageContainer}>
             <Image
               source={{
-                uri: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80",
+                uri: token
+                  ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80"
+                  : "https://ui-avatars.com/api/?name=Guest",
               }}
               style={styles.profileImage}
             />
-            <TouchableOpacity style={styles.editBadge}>
-              <Ionicons name="camera" size={16} color={COLORS.white} />
-            </TouchableOpacity>
           </View>
-          <Text style={styles.userName}>Aman Kalita</Text>
-          <Text style={styles.userEmail}>aman.kalita@example.com</Text>
+
+          <Text style={styles.userName}>
+            {token ? user?.full_name || "User" : "Guest User"}
+          </Text>
+
+          <Text style={styles.userEmail}>
+            {token ? user?.email : "Please login to continue"}
+          </Text>
         </View>
+
+        {token ? (
+          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+            <Ionicons name="log-out-outline" size={18} color="#fff" />
+            <Text style={styles.actionButtonText}>Logout</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => router.push("/login")}
+          >
+            <Ionicons name="log-in-outline" size={18} color="#fff" />
+            <Text style={styles.actionButtonText}>Login</Text>
+          </TouchableOpacity>
+        )}
 
         {/* SETTINGS GROUPS */}
         <View style={styles.menuSection}>
@@ -94,15 +120,6 @@ export default function Profile() {
           />
           <MenuOption icon="document-text-outline" title="Terms of Service" />
         </View>
-
-        <View style={[styles.menuSection, { marginBottom: 40 }]}>
-          <MenuOption
-            icon="log-out-outline"
-            title="Log Out"
-            color={COLORS.red}
-            showArrow={false}
-          />
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -114,6 +131,36 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
+
+  loginButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.blue,
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 30,
+  },
+
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.red,
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 30,
+  },
+
+  actionButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+    marginLeft: 8,
+  },
+
   header: {
     alignItems: "center",
     paddingVertical: 30,

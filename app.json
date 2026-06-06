@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/img/logo.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.jubindas.getstay"
     },
     "web": {
       "output": "static",
@@ -44,6 +45,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "92a745d9-4e11-4a41-93b7-8fe07d58f42f"
+      }
     }
   }
 }

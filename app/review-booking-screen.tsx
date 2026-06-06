@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons"; // Or your preferred icon library
+
 import React from "react";
+
 import {
   Image,
   SafeAreaView,
@@ -9,10 +11,16 @@ import {
   View,
 } from "react-native";
 
+
+
+
 const ReviewBookingScreen = () => {
+
+
+
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
           <Ionicons name="close" size={24} color="black" />

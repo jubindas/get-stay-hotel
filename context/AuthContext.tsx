@@ -63,7 +63,7 @@ export default function AuthProvider({
         password,
       });
 
-      console.log("the login is", response.data);
+      console.log("the login is", JSON.stringify(response.data, null, 2));
 
       const { token, user } = response.data;
 

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Image,
   Pressable,
@@ -26,6 +27,8 @@ interface PropertyType {
   image: string;
   isGuestFavourite?: boolean;
 }
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const CATEGORIES: PropertyType[] = [
   {
@@ -94,6 +97,29 @@ const CATEGORIES: PropertyType[] = [
 ];
 
 export default function Categories() {
+
+
+
+  useEffect(() => {
+
+
+    const fetchCategories = async () => {
+      try {
+
+        const response = await axios.get(`${API_BASE_URL}/api/v1/category/list`)
+
+      } catch (error) {
+
+      }
+    }
+    fetchCategories()
+
+
+
+  }, [])
+
+
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

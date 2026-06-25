@@ -1,5 +1,7 @@
 import Categories from "@/components/Categories";
+
 import OfferBanner from "@/components/OfferBanner";
+
 import PopularDestinations from "@/components/PopularDestinations";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +22,7 @@ import {
 } from "react-native";
 
 export default function HomeIndex() {
+
   const router = useRouter();
 
   const Divider = () => <View style={styles.divider} />;

@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   } as ImageStyle,
 
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.15)",
   } as ViewStyle,
 

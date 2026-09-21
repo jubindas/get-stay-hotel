@@ -1,7 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+
 import axios from "axios";
+
 import { router } from "expo-router";
-import React, { useEffect } from "react";
+
+import { useEffect, useState } from "react";
+
 import {
   Image,
   Pressable,
@@ -10,14 +14,18 @@ import {
   Text,
   View,
 } from "react-native";
+
 import Animated, {
   FadeInRight,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
 
-// 1. Types for Property Categories
+
 interface PropertyType {
   id: string;
   name: string;
@@ -30,93 +38,41 @@ interface PropertyType {
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-const CATEGORIES: PropertyType[] = [
-  {
-    id: "1",
-    name: "Hotel",
-    subtext: "Premium stays in city",
-    priceInfo: "From ₹4,500/night",
-    rating: "4.95",
-    isGuestFavourite: true,
-    image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
-  },
-  {
-    id: "2",
-    name: "Homestay",
-    subtext: "Authentic local living",
-    priceInfo: "From ₹2,200/night",
-    rating: "4.88",
-    isGuestFavourite: true,
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400",
-  },
-  {
-    id: "3",
-    name: "Resort",
-    subtext: "All-inclusive luxury",
-    priceInfo: "From ₹9,800/night",
-    rating: "4.92",
-    isGuestFavourite: false,
-    image: "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=400",
-  },
-  {
-    id: "4",
-    name: "Guest House",
-    subtext: "Cozy & affordable",
-    priceInfo: "From ₹1,500/night",
-    rating: "4.75",
-    isGuestFavourite: false,
-    image: "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=400",
-  },
-  {
-    id: "5",
-    name: "Villa",
-    subtext: "Private & spacious",
-    priceInfo: "From ₹15,000/night",
-    rating: "4.98",
-    isGuestFavourite: true,
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=400",
-  },
-  {
-    id: "6",
-    name: "Apartment",
-    subtext: "Modern urban living",
-    priceInfo: "From ₹3,500/night",
-    rating: "4.80",
-    isGuestFavourite: false,
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400",
-  },
-  {
-    id: "7",
-    name: "Lodge",
-    subtext: "Rustic mountain vibes",
-    priceInfo: "From ₹4,000/night",
-    rating: "4.70",
-    isGuestFavourite: true,
-    image: "https://images.unsplash.com/photo-1449156001446-515f6b3b3335?w=400",
-  },
-];
 
 export default function Categories() {
 
+  const [categories, setCategories] = useState<PropertyType[]>([]);
 
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
 
-
     const fetchCategories = async () => {
+
       try {
+        const response = await axios.get(`${API_BASE_URL}/api/public/categories`);
+        console.log("the response is", response.data);
 
-        const response = await axios.get(`${API_BASE_URL}/api/v1/category/list`)
-
+        if (response.data && response.data.categories) {
+          const apiCategories: PropertyType[] = response.data.categories.map((c: any) => ({
+            id: c.id,
+            name: c.category_name,
+            subtext: c.description,
+            priceInfo: "Explore", // API doesn't provide price
+            rating: "New", // API doesn't provide rating
+            image: c.image_url?.startsWith('http') ? c.image_url : `${API_BASE_URL}${c.image_url}`,
+            isGuestFavourite: false,
+          }));
+          setCategories(apiCategories);
+        }
       } catch (error) {
-
+        console.log("the error is", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    fetchCategories()
-
-
-
-  }, [])
+    };
+    fetchCategories();
+  }, []);
 
 
 
@@ -133,11 +89,55 @@ export default function Categories() {
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
       >
-        {CATEGORIES.map((item, index) => (
-          <CategoryCard key={item.id} item={item} index={index} />
-        ))}
+        {isLoading
+          ? Array.from({ length: 3 }).map((_, index) => (
+            <SkeletonCard key={`skeleton-${index}`} index={index} />
+          ))
+          : categories.map((item, index) => (
+            <CategoryCard key={item.id} item={item} index={index} />
+          ))}
       </ScrollView>
     </View>
+  );
+}
+
+function SkeletonCard({ index }: { index: number }) {
+
+
+  const opacity = useSharedValue(0.5);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 800 }),
+        withTiming(0.5, { duration: 800 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeInRight.delay(index * 80).springify()}
+      style={[styles.card, animatedStyle]}
+    >
+      <View style={styles.imageContainer}>
+        <View style={[styles.image, { backgroundColor: "#e2e8f0" }]} />
+      </View>
+      <View style={styles.info}>
+        <View style={{ height: 16, backgroundColor: "#e2e8f0", borderRadius: 4, width: '70%', marginBottom: 6 }} />
+        <View style={{ height: 12, backgroundColor: "#e2e8f0", borderRadius: 4, width: '40%', marginBottom: 10 }} />
+        <View style={styles.footerRow}>
+          <View style={{ height: 14, backgroundColor: "#e2e8f0", borderRadius: 4, width: '30%' }} />
+          <View style={{ height: 14, backgroundColor: "#e2e8f0", borderRadius: 4, width: '20%' }} />
+        </View>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -147,6 +147,7 @@ function CategoryCard({ item, index }: { item: PropertyType; index: number }) {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: withSpring(scale.value) }],
   }));
+
 
   return (
     <Animated.View

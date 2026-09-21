@@ -108,7 +108,7 @@ function TabIcon({ isFocused, name }: TabIconProps) {
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <TabButton {...props} />}
+      tabBar={(props: any) => <TabButton {...props} />}
       screenOptions={{
         headerShown: false,
       }}

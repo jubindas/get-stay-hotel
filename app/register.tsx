@@ -1,7 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+
 import axios from "axios";
+
 import { router } from "expo-router";
+
 import React, { useEffect, useRef, useState } from "react";
+
 import {
   Animated,
   ImageBackground,
@@ -534,7 +538,7 @@ export default function Register() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.primary },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.4)",
   },
 

@@ -510,7 +510,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.primary },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.4)",
   },
 

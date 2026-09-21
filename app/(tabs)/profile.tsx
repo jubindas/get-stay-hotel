@@ -39,10 +39,12 @@ export default function Profile() {
     color = COLORS.textPrimary,
     showArrow = true,
     danger = false,
+    onPress,
   }: any) => (
     <TouchableOpacity
       style={[styles.menuItem, danger && styles.menuItemDanger]}
       activeOpacity={0.7}
+      onPress={onPress}
     >
       <View
         style={[
@@ -135,15 +137,21 @@ export default function Profile() {
         {/* STATS ROW */}
         {token && (
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => router.push("/bookings")}
+            >
               <Text style={styles.statNum}>3</Text>
               <Text style={styles.statLabel}>Bookings</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => router.push("/bookings")}
+            >
               <Text style={styles.statNum}>2</Text>
               <Text style={styles.statLabel}>Upcoming</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNum}>1.2k</Text>
@@ -200,6 +208,7 @@ export default function Profile() {
               title="My Bookings"
               subtitle="Current & past reservations"
               showArrow
+              onPress={() => router.push("/bookings")}
             />
           </View>
         </View>
@@ -230,13 +239,26 @@ export default function Profile() {
         <View style={styles.menuSection}>
           <Text style={styles.sectionLabel}>Help & Legal</Text>
           <View style={styles.menuCard}>
-            <MenuOption icon="help-circle-outline" title="Help Center" />
+            <MenuOption
+              icon="help-circle-outline"
+              title="Help Center"
+              onPress={() => router.push("/help-center")}
+            />
             <MenuOption
               icon="chatbubble-ellipses-outline"
               title="Contact Support"
+              onPress={() => router.push("/contact-support")}
             />
-            <MenuOption icon="document-text-outline" title="Terms of Service" />
-            <MenuOption icon="lock-closed-outline" title="Privacy Policy" />
+            <MenuOption
+              icon="document-text-outline"
+              title="Terms of Service"
+              onPress={() => router.push("/terms-of-service")}
+            />
+            <MenuOption
+              icon="lock-closed-outline"
+              title="Privacy Policy"
+              onPress={() => router.push("/privacy-policy")}
+            />
           </View>
         </View>
 
@@ -454,6 +476,7 @@ const styles = StyleSheet.create({
   menuSection: {
     paddingHorizontal: 20,
     marginTop: 24,
+    marginBottom: 30
   },
   sectionLabel: {
     fontSize: 11,
@@ -514,13 +537,14 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  
+
 
   logoutItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 16,
+
   },
 
 

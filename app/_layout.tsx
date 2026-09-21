@@ -58,6 +58,14 @@ export default function RootLayout() {
         />
 
         <Stack.Screen
+          name="bookings"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
           name="register"
           options={{
             animation: "fade",
@@ -67,6 +75,38 @@ export default function RootLayout() {
 
         <Stack.Screen
           name="login"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="help-center"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="contact-support"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="terms-of-service"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="privacy-policy"
           options={{
             animation: "fade",
             headerShown: false,

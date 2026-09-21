@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     }),
   } as ViewStyle,
   image: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
   } as ImageStyle,

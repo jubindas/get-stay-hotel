@@ -7,7 +7,6 @@
     "icon": "./assets/img/logo.png",
     "scheme": "getstay",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -18,7 +17,6 @@
         "backgroundImage": "./assets/img/logo.png",
         "monochromeImage": "./assets/img/logo.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.jubindas.getstay"
     },

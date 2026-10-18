@@ -1,6 +1,5 @@
 import AuthProvider from "@/context/AuthContext";
 import { Stack } from "expo-router";
-import React from "react";
 import { Platform } from "react-native";
 
 export default function RootLayout() {
@@ -50,6 +49,13 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="property-details"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
           name="review-booking-screen"
           options={{
             animation: "fade",
@@ -82,7 +88,30 @@ export default function RootLayout() {
         />
 
         <Stack.Screen
+          name="forgot-password"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="change-password"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
           name="help-center"
+          options={{
+            animation: "fade",
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="properties-by-category"
           options={{
             animation: "fade",
             headerShown: false,

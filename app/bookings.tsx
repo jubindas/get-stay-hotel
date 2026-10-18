@@ -1,12 +1,22 @@
 import BookingCard from "@/components/bookings/BookingCard";
+
 import BookingDetailModal from "@/components/bookings/BookingDetailModal";
+
+
 import BookingSkeletonList from "@/components/bookings/BookingSkeleton";
+
 import { useAuth } from "@/context/AuthContext";
+
 import { getUserBookings } from "@/services/bookingService";
+
 import { Booking } from "@/types/booking";
+
 import { Ionicons } from "@expo/vector-icons";
+
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
+
 import {
   FlatList,
   Platform,
@@ -35,23 +45,36 @@ const COLORS = {
   green: "#2D9E6B",
 };
 
-type FilterType = "All" | "Confirmed" | "Pending" | "Cancelled";
+type FilterType = "All" | "Confirmed" | "Cancelled";
 
 export default function MyBookingsScreen() {
+
   const { token, logout } = useAuth();
+
   const [bookings, setBookings] = useState<Booking[]>([]);
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
   const [activeFilter, setActiveFilter] = useState<FilterType>("All");
+
   const [searchQuery, setSearchQuery] = useState<string>("");
+
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [isUnauthorized, setIsUnauthorized] = useState<boolean>(false);
 
   const fetchBookings = useCallback(
     async (showRefreshIndicator = false) => {
+
+
       if (!token) {
+        console.warn("⚠️ [BookingsScreen] No auth token found. User is not authenticated.");
         setIsLoading(false);
         setIsRefreshing(false);
         return;
@@ -67,35 +90,63 @@ export default function MyBookingsScreen() {
 
       try {
         const response = await getUserBookings(token);
+        console.log("📦 [BookingsScreen] API Response received:", response);
+
         if (response && Array.isArray(response.data)) {
+          console.log(`✅ [BookingsScreen] Successfully loaded ${response.data.length} bookings into state`);
           setBookings(response.data);
         } else {
+          console.warn("⚠️ [BookingsScreen] Response received but 'data' is not an array:", response);
           setBookings([]);
         }
       } catch (error: any) {
-        console.error("Error fetching bookings:", error);
-        if (error.response?.status === 401) {
+        const status = error?.response?.status;
+        const responseData = error?.response?.data;
+        const requestUrl = error?.config?.baseURL
+          ? `${error.config.baseURL}${error.config.url}`
+          : error?.config?.url;
+
+
+        if (status === 401) {
           setIsUnauthorized(true);
+          setErrorMessage("Your session has expired. Please sign in again.");
           if (logout) {
+            console.log("🔒 [BookingsScreen] Auto logging out due to 401 Unauthorized");
             await logout();
           }
+        } else if (status === 404) {
+          setErrorMessage("Booking endpoint not found (HTTP 404). Please verify backend URL and routes.");
+        } else if (!error.response) {
+          setErrorMessage("Network error: Cannot reach the backend. Please check network connection and backend status.");
         } else {
-          setErrorMessage("Unable to fetch bookings. Please try again.");
+          const apiMsg = responseData?.message || responseData?.error;
+          setErrorMessage(apiMsg || "Unable to fetch bookings. Please try again.");
         }
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
       }
     },
-    [token, logout]
+    [token, logout],
   );
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    if (!token) return;
+
+    const timeoutId = setTimeout(() => {
+      void fetchBookings();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [token, fetchBookings]);
 
   // Filter & Search Logic
   const filteredBookings = bookings.filter((item) => {
+    // Exclude any unpaid pending bookings
+    if (item.booking_status === "Pending" && item.payment_status === "Pending") {
+      return false;
+    }
+
     const matchesFilter =
       activeFilter === "All" ||
       item.booking_status?.toLowerCase() === activeFilter.toLowerCase();
@@ -123,7 +174,11 @@ export default function MyBookingsScreen() {
     setSelectedBooking(null);
   };
 
-  const filterOptions: FilterType[] = ["All", "Confirmed", "Pending", "Cancelled"];
+  const filterOptions: FilterType[] = [
+    "All",
+    "Confirmed",
+    "Cancelled",
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -161,7 +216,11 @@ export default function MyBookingsScreen() {
         {/* Search Bar */}
         {token && (
           <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
+            <Ionicons
+              name="search-outline"
+              size={18}
+              color={COLORS.textMuted}
+            />
             <TextInput
               style={styles.searchInput}
               placeholder="Search by property or reference..."
@@ -171,7 +230,11 @@ export default function MyBookingsScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={COLORS.textMuted}
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -210,11 +273,16 @@ export default function MyBookingsScreen() {
           /* Unauthenticated State */
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconBox}>
-              <Ionicons name="lock-closed-outline" size={38} color={COLORS.navy} />
+              <Ionicons
+                name="lock-closed-outline"
+                size={38}
+                color={COLORS.navy}
+              />
             </View>
             <Text style={styles.emptyTitle}>Sign in to view bookings</Text>
             <Text style={styles.emptySubtext}>
-              Please sign in to access your current, past, and upcoming stay reservations.
+              Please sign in to access your current, past, and upcoming stay
+              reservations.
             </Text>
             <TouchableOpacity
               style={styles.ctaButton}
@@ -230,7 +298,11 @@ export default function MyBookingsScreen() {
           /* Error State */
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconBox}>
-              <Ionicons name="alert-circle-outline" size={38} color={COLORS.red} />
+              <Ionicons
+                name="alert-circle-outline"
+                size={38}
+                color={COLORS.red}
+              />
             </View>
             <Text style={styles.emptyTitle}>Something went wrong</Text>
             <Text style={styles.emptySubtext}>{errorMessage}</Text>
@@ -286,10 +358,11 @@ export default function MyBookingsScreen() {
         )}
       </View>
 
-      {/* Detail Receipt Modal */}
+
       <BookingDetailModal
         visible={modalVisible}
         booking={selectedBooking}
+        authToken={token || undefined}
         onClose={handleCloseDetail}
       />
     </SafeAreaView>

@@ -1,8 +1,10 @@
+import { getPopularProperties } from "@/services/propertyService";
+import { Property } from "@/types/property";
 import { Ionicons } from "@expo/vector-icons";
-
-import React from "react";
-
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -15,7 +17,6 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -23,72 +24,75 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
+import { getFullImageUrl } from "@/utils/image";
+
 const { width } = Dimensions.get("window");
 
 const ITEM_WIDTH = width * 0.58;
 const ITEM_HEIGHT = 280;
 const ITEM_SPACING = 16;
 
-interface Destination {
-  id: string;
-  title: string;
-  location: string;
-  price: string;
-  rating: number;
-  image: string;
-}
-
-const DESTINATIONS: Destination[] = [
-  {
-    id: "1",
-    title: "Santorini",
-    location: "Greece",
-    price: "$250",
-    rating: 4.9,
-    image: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=500",
-  },
-  {
-    id: "2",
-    title: "Bali",
-    location: "Indonesia",
-    price: "$180",
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=500",
-  },
-  {
-    id: "3",
-    title: "Kyoto",
-    location: "Japan",
-    price: "$210",
-    rating: 4.9,
-    image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=500",
-  },
-];
-
 export default function PopularDestinations() {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPopular = async () => {
+      try {
+        const response = await getPopularProperties();
+        if (response && Array.isArray(response.properties)) {
+          setProperties(response.properties);
+        } else {
+          setProperties([]);
+        }
+      } catch (error) {
+        console.error("Error fetching popular properties:", error);
+        setProperties([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPopular();
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Popular Places</Text>
+          <Text style={styles.headerTitle}>Popular Properties</Text>
         </View>
-        <Pressable style={styles.viewAllBtn}>
+        <Pressable
+          style={styles.viewAllBtn}
+          onPress={() => router.push("/search-bar")}
+        >
           <Text style={styles.viewAllText}>View all</Text>
         </Pressable>
       </View>
 
-      <FlatList
-        data={DESTINATIONS}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listPadding}
-        snapToInterval={ITEM_WIDTH + ITEM_SPACING}
-        decelerationRate="fast"
-        keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <DestinationCard item={item} index={index} />
-        )}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color="#007AFF" size="small" />
+          <Text style={styles.loadingText}>Loading popular stays...</Text>
+        </View>
+      ) : properties.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No popular properties available right now.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={properties}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listPadding}
+          snapToInterval={ITEM_WIDTH + ITEM_SPACING}
+          decelerationRate="fast"
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => (
+            <DestinationCard item={item} index={index} />
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -97,14 +101,37 @@ function DestinationCard({
   item,
   index,
 }: {
-  item: Destination;
+  item: Property;
   index: number;
 }) {
   const scale = useSharedValue(1);
+  const [imageError, setImageError] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: withSpring(scale.value) }],
   }));
+
+  const getImageUrl = (): string => {
+    if (imageError) return getFullImageUrl(null);
+    const rawPath =
+      item.property_images?.[0] || item.image_url || item.category?.image_url;
+    return getFullImageUrl(rawPath);
+  };
+
+  const locationStr = [item.city, item.state]
+    .filter(Boolean)
+    .map((s) => s?.trim())
+    .join(", ") || "India";
+
+  // Calculate starting price if rooms exist
+  const roomPrices = item.room_details
+    ?.map((r) => r.base_price)
+    .filter(Boolean);
+  const minPrice =
+    roomPrices && roomPrices.length > 0 ? Math.min(...roomPrices) : null;
+
+  const categoryName =
+    item.category?.category_name || item.category?.name || "Stay";
 
   return (
     <Animated.View
@@ -116,17 +143,26 @@ function DestinationCard({
       <Pressable
         onPressIn={() => (scale.value = 0.97)}
         onPressOut={() => (scale.value = 1)}
+        onPress={() =>
+          router.push({
+            pathname: "/property-details",
+            params: { id: item.id },
+          })
+        }
         style={styles.card}
       >
-        <Image source={{ uri: item.image }} style={styles.image} />
+        <Image
+          source={{ uri: getImageUrl() }}
+          style={styles.image}
+          onError={() => setImageError(true)}
+        />
 
         <View style={styles.topRow}>
+          <View style={styles.categoryTag}>
+            <Text style={styles.categoryTagText}>{categoryName}</Text>
+          </View>
           <View style={styles.heartCircle}>
             <Ionicons name="heart-outline" size={16} color="#FFF" />
-          </View>
-          <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={10} color="#FFD700" />
-            <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
         </View>
 
@@ -134,22 +170,27 @@ function DestinationCard({
         <View style={styles.bottomContent}>
           <View style={styles.textContainer}>
             <Text style={styles.cardTitle} numberOfLines={1}>
-              {item.title}
+              {item.property_name}
             </Text>
             <View style={styles.locationRow}>
               <Ionicons name="location-outline" size={12} color="#CCC" />
-              <Text style={styles.locationText}>{item.location}</Text>
+              <Text style={styles.locationText} numberOfLines={1}>
+                {locationStr}
+              </Text>
             </View>
           </View>
 
           <View style={styles.priceTag}>
-            <Text style={styles.priceText}>{item.price}</Text>
+            <Text style={styles.priceText}>
+              {minPrice ? `₹${minPrice.toLocaleString()}` : "Explore"}
+            </Text>
           </View>
         </View>
       </Pressable>
     </Animated.View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -219,16 +260,47 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     padding: 12,
   } as ViewStyle,
+  categoryTag: {
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  } as ViewStyle,
+  categoryTagText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "700",
+  } as TextStyle,
   heartCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(0,0,0,0.2)",
+    backgroundColor: "rgba(0,0,0,0.3)",
     alignItems: "center",
     justifyContent: "center",
   } as ViewStyle,
+  loadingContainer: {
+    paddingVertical: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  } as ViewStyle,
+  loadingText: {
+    marginTop: 8,
+    fontSize: 13,
+    color: "#64748b",
+  } as TextStyle,
+  emptyContainer: {
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  } as ViewStyle,
+  emptyText: {
+    fontSize: 13,
+    color: "#64748b",
+  } as TextStyle,
   ratingBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -254,7 +326,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.25)",
+    backgroundColor: "rgba(0,0,0,0.35)",
   } as ViewStyle,
   textContainer: {
     flex: 1,
@@ -286,3 +358,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   } as TextStyle,
 });
+

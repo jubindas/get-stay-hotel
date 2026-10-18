@@ -1,10 +1,10 @@
+import MenuOption from "@/components/profile/MenuOption";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
 import {
-  Image,
   Platform,
+  Image as RNImage,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -32,56 +32,6 @@ const COLORS = {
 export default function Profile() {
   const { token, user, logout } = useAuth();
 
-  const MenuOption = ({
-    icon,
-    title,
-    subtitle,
-    color = COLORS.textPrimary,
-    showArrow = true,
-    danger = false,
-    onPress,
-  }: any) => (
-    <TouchableOpacity
-      style={[styles.menuItem, danger && styles.menuItemDanger]}
-      activeOpacity={0.7}
-      onPress={onPress}
-    >
-      <View
-        style={[
-          styles.iconBox,
-          {
-            backgroundColor: danger
-              ? COLORS.red + "15"
-              : color === COLORS.gold
-                ? COLORS.gold + "18"
-                : COLORS.navy + "08",
-          },
-        ]}
-      >
-        <Ionicons
-          name={icon}
-          size={20}
-          color={
-            danger
-              ? COLORS.red
-              : color === COLORS.gold
-                ? COLORS.gold
-                : COLORS.navy
-          }
-        />
-      </View>
-      <View style={styles.menuContent}>
-        <Text style={[styles.menuTitle, danger && { color: COLORS.red }]}>
-          {title}
-        </Text>
-        {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
-      </View>
-      {showArrow && (
-        <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-      )}
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.navy} />
@@ -107,7 +57,7 @@ export default function Profile() {
           {/* Avatar card */}
           <View style={styles.avatarCard}>
             <View style={styles.avatarWrapper}>
-              <Image
+              <RNImage
                 source={{
                   uri: token
                     ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=500&q=80"
@@ -134,31 +84,6 @@ export default function Profile() {
           </View>
         </View>
 
-        {/* STATS ROW */}
-        {token && (
-          <View style={styles.statsRow}>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() => router.push("/bookings")}
-            >
-              <Text style={styles.statNum}>3</Text>
-              <Text style={styles.statLabel}>Bookings</Text>
-            </TouchableOpacity>
-            <View style={styles.statDivider} />
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() => router.push("/bookings")}
-            >
-              <Text style={styles.statNum}>2</Text>
-              <Text style={styles.statLabel}>Upcoming</Text>
-            </TouchableOpacity>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNum}>1.2k</Text>
-              <Text style={styles.statLabel}>Points</Text>
-            </View>
-          </View>
-        )}
 
         {/* LOGIN / LOGOUT CTA */}
         {!token ? (
@@ -195,7 +120,9 @@ export default function Profile() {
             <MenuOption
               icon="shield-checkmark-outline"
               title="Login & Security"
-              subtitle="Password & two-factor auth"
+              subtitle="Password & security settings"
+              showArrow
+              onPress={() => router.push(token ? "/change-password" : "/login")}
             />
             <MenuOption
               icon="card-outline"
@@ -209,28 +136,6 @@ export default function Profile() {
               subtitle="Current & past reservations"
               showArrow
               onPress={() => router.push("/bookings")}
-            />
-          </View>
-        </View>
-
-        {/* PREFERENCES */}
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionLabel}>Preferences</Text>
-          <View style={styles.menuCard}>
-            <MenuOption
-              icon="notifications-outline"
-              title="Notifications"
-              subtitle="Alerts, offers & reminders"
-            />
-            <MenuOption
-              icon="language-outline"
-              title="Language & Region"
-              subtitle="English (India)"
-            />
-            <MenuOption
-              icon="moon-outline"
-              title="Appearance"
-              subtitle="Light mode"
             />
           </View>
         </View>
@@ -476,7 +381,7 @@ const styles = StyleSheet.create({
   menuSection: {
     paddingHorizontal: 20,
     marginTop: 24,
-    marginBottom: 30
+    marginBottom: 30,
   },
   sectionLabel: {
     fontSize: 11,
@@ -538,15 +443,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-
   logoutItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 16,
-
   },
-
 
   logoutText: {
     fontSize: 15,

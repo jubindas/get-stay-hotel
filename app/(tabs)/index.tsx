@@ -1,10 +1,17 @@
 import Categories from "@/components/Categories";
+
+import { Divider } from "@/components/Divider";
+
 import OfferBanner from "@/components/OfferBanner";
+
 import PopularDestinations from "@/components/PopularDestinations";
+
 import RoomCategories from "@/components/RoomCategories";
+
 import { Ionicons } from "@expo/vector-icons";
+
 import { useRouter } from "expo-router";
-import React from "react";
+
 import {
   Platform,
   Pressable,
@@ -18,8 +25,6 @@ import {
 
 export default function HomeIndex() {
   const router = useRouter();
-
-  const Divider = () => <View style={styles.divider} />;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -52,14 +57,13 @@ export default function HomeIndex() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <OfferBanner />
         <Categories />
+        <OfferBanner />
         <Divider />
         <RoomCategories />
         <Divider />
         <PopularDestinations />
         <Divider />
-
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>

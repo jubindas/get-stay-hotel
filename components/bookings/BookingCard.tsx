@@ -58,6 +58,25 @@ export default function BookingCard({ booking, onPress }: BookingCardProps) {
 
   const nights = calculateNights(booking.check_in_date, booking.check_out_date);
 
+  // Per-day room price and calculation breakdown
+  const firstItem = booking.booking_items?.[0];
+  const numRooms = firstItem?.number_of_rooms || 1;
+  const grandTotal = Number(booking.grand_total) || 0;
+
+  const perDayPrice =
+    firstItem?.base_price_booked && firstItem.base_price_booked > 0
+      ? firstItem.base_price_booked
+      : firstItem?.room?.base_price && firstItem.room.base_price > 0
+      ? firstItem.room.base_price
+      : firstItem?.room_tariff && firstItem.room_tariff > 0
+      ? Math.round(firstItem.room_tariff / (nights * numRooms))
+      : nights > 0
+      ? Math.round(grandTotal / (nights * numRooms))
+      : grandTotal;
+
+  const totalCalculated = perDayPrice * nights * numRooms;
+  const totalAmountToShow = grandTotal > 0 ? grandTotal : totalCalculated;
+
   const getStatusColor = (status: string) => {
     const s = status?.toLowerCase() || "";
     if (s === "confirmed" || s === "paid" || s === "completed") {
@@ -136,13 +155,25 @@ export default function BookingCard({ booking, onPress }: BookingCardProps) {
         </View>
       </View>
 
+      {/* Calculation Banner: e.g. 49 nights × ₹500 = ₹24,500 */}
+      <View style={styles.calculationBadge}>
+        <Ionicons name="calculator-outline" size={13} color={COLORS.navyMid} />
+        <Text style={styles.calculationText}>
+          {nights} {nights === 1 ? "night" : "nights"} × ₹{perDayPrice.toLocaleString("en-IN")}/night
+          {numRooms > 1 ? ` (${numRooms} rooms)` : ""} = ₹{totalAmountToShow.toLocaleString("en-IN")}
+        </Text>
+      </View>
+
       <View style={styles.divider} />
 
       {/* Footer Price & Details Button */}
       <View style={styles.cardFooter}>
         <View>
           <Text style={styles.priceLabel}>TOTAL AMOUNT</Text>
-          <Text style={styles.priceVal}>₹{booking.grand_total?.toLocaleString()}</Text>
+          <Text style={styles.priceVal}>₹{totalAmountToShow.toLocaleString("en-IN")}</Text>
+          <Text style={styles.priceSubtext}>
+            {nights} nights × ₹{perDayPrice.toLocaleString("en-IN")}
+          </Text>
         </View>
 
         <View style={styles.detailsBtn}>
@@ -314,5 +345,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: COLORS.navy,
+  },
+  calculationBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  calculationText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.navyMid,
+  },
+  priceSubtext: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });

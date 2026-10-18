@@ -185,7 +185,12 @@ function RoomCategoryCard({
           styles.card,
           pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
         ]}
-        onPress={() => router.push("/rooms-list")}
+        onPress={() =>
+          router.push({
+            pathname: "/search-bar",
+            params: { category_id: item.id },
+          })
+        }
       >
         <View style={styles.cardHeader}>
           <View style={styles.iconCircle}>

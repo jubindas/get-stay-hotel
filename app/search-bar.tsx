@@ -1,9 +1,9 @@
 import PropertyCard from "@/components/search/PropertyCard";
 import PropertySkeletonList from "@/components/search/PropertySkeleton";
 import { searchProperties } from "@/services/propertyService";
-import { SearchedProperty } from "@/types/property";
+import { PropertySearchParams, SearchedProperty } from "@/types/property";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -123,15 +123,38 @@ const GuestPickerModal: React.FC<GuestPickerProps> = ({
   );
 };
 
+
+
+const formatApiDate = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
 export default function OyoStyleSearchBar() {
-  const [location, setLocation] = useState("");
+  const routeParams = useLocalSearchParams<{
+    category_id?: string;
+    q?: string;
+  }>();
+
+  const [location, setLocation] = useState(routeParams.q || "");
+  const [categoryId, setCategoryId] = useState<string | undefined>(
+    routeParams.category_id
+  );
   const [checkin, setCheckin] = useState(new Date());
+  const [checkout, setCheckout] = useState(() => {
+    const nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+    return nextDay;
+  });
   const [guestData, setGuestData] = useState<GuestData>({
     rooms: 1,
     adults: 1,
     children: 0,
   });
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState<"checkin" | "checkout">("checkin");
   const [guestModalVisible, setGuestModalVisible] = useState(false);
 
   // Search API States
@@ -141,7 +164,10 @@ export default function OyoStyleSearchBar() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchSearchResults = useCallback(
-    async (queryKeyword: string = "", isPullToRefresh = false) => {
+    async (
+      overrideLocation?: string,
+      isPullToRefresh = false
+    ) => {
       if (isPullToRefresh) {
         setIsRefreshing(true);
       } else {
@@ -149,10 +175,29 @@ export default function OyoStyleSearchBar() {
       }
       setErrorMessage(null);
 
+      const queryText =
+        overrideLocation !== undefined ? overrideLocation : location;
+      const totalGuests = guestData.adults + guestData.children;
+
+      const searchParams: PropertySearchParams = {};
+      if (queryText.trim().length > 0) {
+        searchParams.q = queryText.trim();
+      }
+      if (categoryId && categoryId.trim().length > 0) {
+        searchParams.category_id = categoryId.trim();
+      }
+      if (checkin) {
+        searchParams.check_in = formatApiDate(checkin);
+      }
+      if (checkout) {
+        searchParams.check_out = formatApiDate(checkout);
+      }
+      if (totalGuests > 0) {
+        searchParams.guests = totalGuests;
+      }
+
       try {
-        const response = await searchProperties(queryKeyword);
-        console.log("Search query:", queryKeyword);
-        console.log("Search response properties:", response?.properties);
+        const response = await searchProperties(searchParams);
         if (response && Array.isArray(response.properties)) {
           setProperties(response.properties);
         } else {
@@ -166,13 +211,13 @@ export default function OyoStyleSearchBar() {
         setIsRefreshing(false);
       }
     },
-    []
+    [location, categoryId, checkin, checkout, guestData]
   );
 
-  // Initial load: Fetch all active properties
+  // Initial load: Fetch properties
   useEffect(() => {
-    fetchSearchResults("");
-  }, [fetchSearchResults]);
+    fetchSearchResults(location);
+  }, []);
 
   // Debounced search on typing location
   useEffect(() => {
@@ -181,11 +226,12 @@ export default function OyoStyleSearchBar() {
     }, 450);
 
     return () => clearTimeout(timer);
-  }, [location, fetchSearchResults]);
+  }, [location]);
 
   const handleManualSearch = () => {
     fetchSearchResults(location);
   };
+
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
@@ -255,11 +301,14 @@ export default function OyoStyleSearchBar() {
           )}
         </View>
 
-        {/* Quick Info Row (Check-in & Guests) */}
+        {/* Quick Info Row (Check-in, Check-out & Guests) */}
         <View style={styles.quickInfoRow}>
           <TouchableOpacity
             style={styles.infoSegment}
-            onPress={() => setDatePickerVisible(true)}
+            onPress={() => {
+              setDatePickerMode("checkin");
+              setDatePickerVisible(true);
+            }}
           >
             <View style={styles.infoIconRow}>
               <Ionicons
@@ -271,6 +320,27 @@ export default function OyoStyleSearchBar() {
               <Text style={styles.label}>CHECK-IN</Text>
             </View>
             <Text style={styles.greenText}>{formatDate(checkin)}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.infoSegment}
+            onPress={() => {
+              setDatePickerMode("checkout");
+              setDatePickerVisible(true);
+            }}
+          >
+            <View style={styles.infoIconRow}>
+              <Ionicons
+                name="calendar-outline"
+                size={13}
+                color={COLORS.grayText}
+                style={{ marginRight: 4 }}
+              />
+              <Text style={styles.label}>CHECK-OUT</Text>
+            </View>
+            <Text style={styles.greenText}>{formatDate(checkout)}</Text>
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -289,7 +359,7 @@ export default function OyoStyleSearchBar() {
               <Text style={styles.label}>GUESTS</Text>
             </View>
             <Text style={styles.greenText}>
-              {guestData.rooms} R · {guestData.adults + guestData.children} G
+              {guestData.adults + guestData.children} Guests
             </Text>
           </TouchableOpacity>
         </View>
@@ -369,9 +439,19 @@ export default function OyoStyleSearchBar() {
         isVisible={datePickerVisible}
         mode="date"
         themeVariant="light"
+        date={datePickerMode === "checkin" ? checkin : checkout}
         onConfirm={(date) => {
           setDatePickerVisible(false);
-          setCheckin(date);
+          if (datePickerMode === "checkin") {
+            setCheckin(date);
+            if (date >= checkout) {
+              const next = new Date(date);
+              next.setDate(next.getDate() + 1);
+              setCheckout(next);
+            }
+          } else {
+            setCheckout(date);
+          }
         }}
         onCancel={() => setDatePickerVisible(false)}
       />

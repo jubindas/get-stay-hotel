@@ -1,24 +1,22 @@
+import LoadingDots from "@/components/ui/LoadingDots";
+import Toast, { type ToastType } from "@/components/ui/Toast";
 import { Ionicons } from "@expo/vector-icons";
-
 import axios from "axios";
-
 import { router } from "expo-router";
-
-import React, { useEffect, useRef, useState } from "react";
-
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   ImageBackground,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  ScrollView,
 } from "react-native";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -52,163 +50,41 @@ const FIELDS: {
   keyboard?: any;
   secure?: boolean;
 }[] = [
-    {
-      key: "fullName",
-      label: "Full Name",
-      placeholder: "John Doe",
-      iconName: "person",
-    },
-    {
-      key: "email",
-      label: "Email Address",
-      placeholder: "you@example.com",
-      iconName: "mail",
-      keyboard: "email-address",
-    },
-    {
-      key: "phone",
-      label: "Phone Number",
-      placeholder: "+91 98765 43210",
-      iconName: "call",
-      keyboard: "phone-pad",
-    },
-    {
-      key: "age",
-      label: "Age",
-      placeholder: "25",
-      iconName: "calendar",
-      keyboard: "numeric",
-    },
-    {
-      key: "password",
-      label: "Password",
-      placeholder: "Min. 8 characters",
-      iconName: "lock-closed",
-      secure: true,
-    },
-  ];
-
-type ToastType = "success" | "error";
-
-function Toast({
-  message,
-  type,
-  visible,
-}: {
-  message: string;
-  type: ToastType;
-  visible: boolean;
-}) {
-  const translateY = useRef(new Animated.Value(-100)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0,
-          tension: 70,
-          friction: 11,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: -100,
-          duration: 240,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 240,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible]);
-
-  const isSuccess = type === "success";
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.toast,
-        {
-          transform: [{ translateY }],
-          opacity,
-          backgroundColor: isSuccess ? C.successBg : C.errorBg,
-          borderColor: isSuccess ? C.successBorder : C.errorBorder,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.toastDot,
-          { backgroundColor: isSuccess ? C.successText : C.error },
-        ]}
-      />
-      <Text
-        style={[
-          styles.toastText,
-          { color: isSuccess ? C.successText : C.error },
-        ]}
-      >
-        {message}
-      </Text>
-    </Animated.View>
-  );
-}
-
-function LoadingDots() {
-  const dots = [
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-  ];
-  useEffect(() => {
-    dots.forEach((dot, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 130),
-          Animated.timing(dot, {
-            toValue: -5,
-            duration: 260,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dot, {
-            toValue: 0,
-            duration: 260,
-            useNativeDriver: true,
-          }),
-          Animated.delay(520),
-        ]),
-      ).start(),
-    );
-  }, []);
-  return (
-    <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-      {dots.map((dot, i) => (
-        <Animated.View
-          key={i}
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: 3,
-            backgroundColor: C.primary,
-            transform: [{ translateY: dot }],
-          }}
-        />
-      ))}
-    </View>
-  );
-}
+  {
+    key: "fullName",
+    label: "Full Name",
+    placeholder: "John Doe",
+    iconName: "person",
+  },
+  {
+    key: "email",
+    label: "Email Address",
+    placeholder: "you@example.com",
+    iconName: "mail",
+    keyboard: "email-address",
+  },
+  {
+    key: "phone",
+    label: "Phone Number",
+    placeholder: "+91 98765 43210",
+    iconName: "call",
+    keyboard: "phone-pad",
+  },
+  {
+    key: "age",
+    label: "Age",
+    placeholder: "25",
+    iconName: "calendar",
+    keyboard: "numeric",
+  },
+  {
+    key: "password",
+    label: "Password",
+    placeholder: "Min. 8 characters",
+    iconName: "lock-closed",
+    secure: true,
+  },
+];
 
 export default function Register() {
   const [values, setValues] = useState<Record<FieldKey, string>>({
@@ -231,56 +107,55 @@ export default function Register() {
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const keyboardAnim = useRef(new Animated.Value(0)).current;
+  const [keyboardAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        setKeyboardVisible(true);
+      () => {
         Animated.timing(keyboardAnim, {
           toValue: 1,
           duration: 250,
           useNativeDriver: false,
         }).start();
-      }
+      },
     );
     const hideSub = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      (e) => {
+      () => {
         Animated.timing(keyboardAnim, {
           toValue: 0,
           duration: 250,
           useNativeDriver: false,
-        }).start(() => setKeyboardVisible(false));
-      }
+        }).start();
+      },
     );
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [keyboardAnim]);
 
   const androidPadding = keyboardAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 260],
   });
-  
+
   const brandOpacity = keyboardAnim.interpolate({
     inputRange: [0, 0.6],
     outputRange: [1, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
-  const fadeIn = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(50)).current;
-  const buttonScale = useRef(new Animated.Value(1)).current;
-  const fieldAnims = useRef(
-    Object.fromEntries(
-      FIELDS.map((f) => [f.key, new Animated.Value(0)]),
-    ) as Record<FieldKey, Animated.Value>,
-  ).current;
+  const [fadeIn] = useState(() => new Animated.Value(0));
+  const [slideUp] = useState(() => new Animated.Value(50));
+  const [buttonScale] = useState(() => new Animated.Value(1));
+  const [fieldAnims] = useState<Record<FieldKey, Animated.Value>>(
+    () =>
+      Object.fromEntries(
+        FIELDS.map((f) => [f.key, new Animated.Value(0)]),
+      ) as Record<FieldKey, Animated.Value>,
+  );
 
   useEffect(() => {
     Animated.parallel([
@@ -299,7 +174,7 @@ export default function Register() {
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
-  }, []);
+  }, [fadeIn, slideUp, toastTimer]);
 
   const showToast = (message: string, type: ToastType) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -329,10 +204,15 @@ export default function Register() {
       if (typeof d.message === "string") return d.message;
       if (typeof d.error === "string") return d.error;
       if (Array.isArray(d.errors) && d.errors.length > 0) {
-        return d.errors[0]?.message || d.errors[0]?.msg || JSON.stringify(d.errors[0]);
+        return (
+          d.errors[0]?.message ||
+          d.errors[0]?.msg ||
+          JSON.stringify(d.errors[0])
+        );
       }
-      if (typeof d.error === "object" && d.error.message) return d.error.message;
-      
+      if (typeof d.error === "object" && d.error.message)
+        return d.error.message;
+
       // Fallback for unknown object structure
       if (typeof d === "object") {
         const firstValue = Object.values(d)[0];
@@ -380,10 +260,16 @@ export default function Register() {
 
   return (
     <ImageBackground
-      source={{ uri: "https://i.pinimg.com/736x/0c/2f/b1/0c2fb1e4f17ce9378aa6d6b5ee30a4f4.jpg" }}
+      source={{
+        uri: "https://i.pinimg.com/736x/0c/2f/b1/0c2fb1e4f17ce9378aa6d6b5ee30a4f4.jpg",
+      }}
       style={styles.root}
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
       <View style={styles.overlay} />
 
       <Toast
@@ -396,18 +282,32 @@ export default function Register() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View style={[styles.brandContainer, { 
-            opacity: brandOpacity,
-            height: keyboardAnim.interpolate({ inputRange: [0, 1], outputRange: [80, 0] }),
-            marginTop: keyboardAnim.interpolate({ inputRange: [0, 1], outputRange: [Platform.OS === "android" ? 40 : 50, 0] }),
-            marginBottom: keyboardAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }),
-            overflow: 'hidden'
-          }]}>
+          <Animated.View
+            style={[
+              styles.brandContainer,
+              {
+                opacity: brandOpacity,
+                height: keyboardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [80, 0],
+                }),
+                marginTop: keyboardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [Platform.OS === "android" ? 40 : 50, 0],
+                }),
+                marginBottom: keyboardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [16, 0],
+                }),
+                overflow: "hidden",
+              },
+            ]}
+          >
             <Text style={styles.brandTitle}>GetStay</Text>
             <Text style={styles.brandSub}>Premium Hotel Booking</Text>
           </Animated.View>
@@ -528,7 +428,9 @@ export default function Register() {
               </Text>
             </TouchableOpacity>
           </Animated.View>
-          {Platform.OS === "android" && <Animated.View style={{ height: androidPadding }} />}
+          {Platform.OS === "android" && (
+            <Animated.View style={{ height: androidPadding }} />
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </ImageBackground>

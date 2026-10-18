@@ -1,22 +1,17 @@
-import { Ionicons } from "@expo/vector-icons";
-
+import api, { API_BASE_URL as SERVICE_API_BASE_URL } from "@/services/api";
 import axios from "axios";
-
 import { router } from "expo-router";
-
 import { useEffect, useState } from "react";
-
 import {
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
-
 import Animated, {
-  FadeInRight,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -25,92 +20,126 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-
-interface PropertyType {
+export interface Category {
   id: string;
-  name: string;
-  subtext: string;
-  priceInfo: string;
-  rating: string;
-  image: string;
-  isGuestFavourite?: boolean;
+  category_name: string;
+  description?: string;
+  image_url: string;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  SERVICE_API_BASE_URL ||
+  "http://192.168.29.235:3005";
 
+const GRID_PADDING = 20;
+const GRID_GAP = 8;
+const ROW_GAP = 10;
+
+export const getCategoryImageUrl = (path?: string | null): string => {
+  if (!path || typeof path !== "string" || path.trim().length === 0) return "";
+  const trimmed = path.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  const base = (API_BASE_URL ?? "").replace(/\/+$/, "");
+  const clean = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return `${base}${clean}`;
+};
 
 export default function Categories() {
-
-  const [categories, setCategories] = useState<PropertyType[]>([]);
-
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Dynamic card width to guarantee exactly 4 items per row in the grid
+  const cardWidth = Math.floor(
+    (screenWidth - GRID_PADDING * 2 - GRID_GAP * 3) / 4
+  );
 
   useEffect(() => {
+    let isMounted = true;
 
     const fetchCategories = async () => {
-
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/public/categories`);
-        console.log("the response is", response.data);
+        let data: any = null;
+        try {
+          const response = await api.get("/api/public/categories");
+          data = response.data;
+        } catch {
+          const fallbackResponse = await axios.get(
+            `${API_BASE_URL}/api/public/categories`
+          );
+          data = fallbackResponse.data;
+        }
 
-        if (response.data && response.data.categories) {
-          const apiCategories: PropertyType[] = response.data.categories.map((c: any) => ({
-            id: c.id,
-            name: c.category_name,
-            subtext: c.description,
-            priceInfo: "Explore", // API doesn't provide price
-            rating: "New", // API doesn't provide rating
-            image: c.image_url?.startsWith('http') ? c.image_url : `${API_BASE_URL}${c.image_url}`,
-            isGuestFavourite: false,
-          }));
-          setCategories(apiCategories);
+        console.log("the response is", data);
+
+        if (isMounted && data) {
+          if (Array.isArray(data.categories)) {
+            setCategories(data.categories);
+          } else if (Array.isArray(data)) {
+            setCategories(data);
+          }
         }
       } catch (error) {
-        console.log("the error is", error);
+        console.log("Error fetching categories:", error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
+
     fetchCategories();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Popular Types</Text>
-        <Ionicons name="chevron-forward" size={18} color="#000" />
+        <Text style={styles.headerTitle}>Categories</Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        decelerationRate="fast"
-      >
+      <View style={styles.gridContainer}>
         {isLoading
-          ? Array.from({ length: 3 }).map((_, index) => (
-            <SkeletonCard key={`skeleton-${index}`} index={index} />
-          ))
+          ? Array.from({ length: 8 }).map((_, index) => (
+              <SkeletonCard
+                key={`cat-skeleton-${index}`}
+                index={index}
+                cardWidth={cardWidth}
+              />
+            ))
           : categories.map((item, index) => (
-            <CategoryCard key={item.id} item={item} index={index} />
-          ))}
-      </ScrollView>
+              <CategoryCard
+                key={item.id || `cat-${index}`}
+                item={item}
+                index={index}
+                cardWidth={cardWidth}
+              />
+            ))}
+      </View>
     </View>
   );
 }
 
-function SkeletonCard({ index }: { index: number }) {
-
-
-  const opacity = useSharedValue(0.5);
+function SkeletonCard({
+  index,
+  cardWidth,
+}: {
+  index: number;
+  cardWidth: number;
+}) {
+  const opacity = useSharedValue(0.45);
 
   useEffect(() => {
     opacity.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 800 }),
-        withTiming(0.5, { duration: 800 })
+        withTiming(1, { duration: 750 }),
+        withTiming(0.45, { duration: 750 })
       ),
       -1,
       true
@@ -123,70 +152,85 @@ function SkeletonCard({ index }: { index: number }) {
 
   return (
     <Animated.View
-      entering={FadeInRight.delay(index * 80).springify()}
-      style={[styles.card, animatedStyle]}
+      entering={FadeInDown.delay(index * 35).springify()}
+      style={[{ width: cardWidth }, animatedStyle]}
     >
-      <View style={styles.imageContainer}>
-        <View style={[styles.image, { backgroundColor: "#e2e8f0" }]} />
-      </View>
-      <View style={styles.info}>
-        <View style={{ height: 16, backgroundColor: "#e2e8f0", borderRadius: 4, width: '70%', marginBottom: 6 }} />
-        <View style={{ height: 12, backgroundColor: "#e2e8f0", borderRadius: 4, width: '40%', marginBottom: 10 }} />
-        <View style={styles.footerRow}>
-          <View style={{ height: 14, backgroundColor: "#e2e8f0", borderRadius: 4, width: '30%' }} />
-          <View style={{ height: 14, backgroundColor: "#e2e8f0", borderRadius: 4, width: '20%' }} />
-        </View>
+      <View style={styles.skeletonCard}>
+        <View style={styles.skeletonImage} />
+        <View style={styles.skeletonText} />
       </View>
     </Animated.View>
   );
 }
 
-function CategoryCard({ item, index }: { item: PropertyType; index: number }) {
+function CategoryCard({
+  item,
+  index,
+  cardWidth,
+}: {
+  item: Category;
+  index: number;
+  cardWidth: number;
+}) {
   const scale = useSharedValue(1);
+  const [imgError, setImgError] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(scale.value) }],
+    transform: [
+      {
+        scale: withSpring(scale.value, {
+          damping: 15,
+          stiffness: 300,
+        }),
+      },
+    ],
   }));
 
+  const imageUrl = getCategoryImageUrl(item.image_url);
 
   return (
     <Animated.View
-      entering={FadeInRight.delay(index * 80).springify()}
-      style={[styles.card, animatedStyle]}
+      entering={FadeInDown.delay(index * 35).springify()}
+      style={[{ width: cardWidth }, animatedStyle]}
     >
       <Pressable
-        onPressIn={() => (scale.value = 0.97)}
+        onPressIn={() => (scale.value = 0.94)}
         onPressOut={() => (scale.value = 1)}
-        style={styles.pressable}
-        onPress={() => router.push("/rooms-list")}
+        style={styles.card}
+        onPress={() =>
+          router.push({
+            pathname: "/properties-by-category",
+            params: {
+              category_id: item.id,
+              category_name: item.category_name,
+            },
+          })
+        }
       >
-        {/* Image Frame */}
         <View style={styles.imageContainer}>
-          <Image source={{ uri: item.image }} style={styles.image} />
-
-          {item.isGuestFavourite && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Guest favourite</Text>
-            </View>
+          {imageUrl && !imgError ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.categoryImage}
+              resizeMode="contain"
+              onError={(e) => {
+                console.log(
+                  "Category image failed to load:",
+                  imageUrl,
+                  e.nativeEvent.error
+                );
+                setImgError(true);
+              }}
+            />
+          ) : (
+            <View style={styles.imagePlaceholder} />
           )}
-
-          <View style={styles.heartWrapper}>
-            <Ionicons name="heart-outline" size={22} color="white" />
-          </View>
         </View>
 
-        {/* Text Details - Exactly like image */}
-        <View style={styles.info}>
-          <Text style={styles.nameText}>{item.name}</Text>
-          <Text style={styles.subText}>{item.subtext}</Text>
-
-          <View style={styles.footerRow}>
-            <Text style={styles.priceText}>{item.priceInfo}</Text>
-            <View style={styles.ratingBox}>
-              <Ionicons name="star" size={12} color="#000" />
-              <Text style={styles.ratingText}>{item.rating}</Text>
-            </View>
-          </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.categoryName} numberOfLines={2}>
+            {item.category_name}
+          </Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -195,100 +239,100 @@ function CategoryCard({ item, index }: { item: PropertyType; index: number }) {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 12,
+    marginVertical: 10,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 24,
-    marginBottom: 16,
+    justifyContent: "space-between",
+    paddingHorizontal: GRID_PADDING,
+    marginBottom: 10,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#1e293b",
-    letterSpacing: -0.5,
-    marginRight: 4,
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#0f172a",
+    letterSpacing: -0.3,
   },
-  scrollContent: {
-    paddingLeft: 24,
-    paddingRight: 10,
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: GRID_PADDING,
+    columnGap: GRID_GAP,
+    rowGap: ROW_GAP,
   },
   card: {
-    width: 240,
-    marginRight: 18,
-  },
-  pressable: {
     width: "100%",
+    height: 86,
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 2,
   },
   imageContainer: {
     width: "100%",
-    aspectRatio: 1, // Square like the image
-    borderRadius: 20, // Softer Airbnb radius
-    overflow: "hidden",
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryImage: {
+    width: 40,
+    height: 40,
+  },
+  imagePlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: "#f1f5f9",
   },
-  image: {
+  textContainer: {
     width: "100%",
-    height: "100%",
-    resizeMode: "cover",
+    minHeight: 26,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  badge: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    // Soft shadow for the badge
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  badgeText: {
+  categoryName: {
     fontSize: 11,
-    fontWeight: "800",
-    color: "#000",
-  },
-  heartWrapper: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-  },
-  info: {
-    marginTop: 10,
-  },
-  nameText: {
-    fontSize: 15,
     fontWeight: "700",
-    color: "#111",
+    color: "#0f172a",
+    textAlign: "center",
+    lineHeight: 13,
+    letterSpacing: -0.2,
   },
-  subText: {
-    fontSize: 13,
-    color: "#717171", // Airbnb grey
-    marginTop: 1,
-  },
-  footerRow: {
-    flexDirection: "row",
+  skeletonCard: {
+    width: "100%",
+    height: 86,
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
   },
-  priceText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#444",
+  skeletonImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#f1f5f9",
   },
-  ratingBox: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  ratingText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#111",
-    marginLeft: 3,
+  skeletonText: {
+    width: "70%",
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#f1f5f9",
+    marginBottom: 4,
   },
 });
+
+

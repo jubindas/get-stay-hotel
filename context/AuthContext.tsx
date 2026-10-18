@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import axios from "axios";
 
@@ -11,6 +11,8 @@ interface User {
   email: string;
   full_name: string;
   user_type: string;
+  phone?: string;
+  phone_number?: string;
   kyc_status?: string;
 }
 
@@ -37,24 +39,34 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUser();
-  }, []);
+    let cancelled = false;
 
-  const loadUser = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem("token");
-      const storedUser = await AsyncStorage.getItem("user");
+    const loadUser = async () => {
+      try {
+        const [storedToken, storedUser] = await Promise.all([
+          AsyncStorage.getItem("token"),
+          AsyncStorage.getItem("user"),
+        ]);
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        if (cancelled) return;
+
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.log("Auth load error:", error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (error) {
-      console.log("Auth load error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {

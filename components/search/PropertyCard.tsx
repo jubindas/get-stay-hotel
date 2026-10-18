@@ -22,17 +22,17 @@ const COLORS = {
   goldLight: "#FFFBEB",
 };
 
+import { getFullImageUrl } from "@/utils/image";
+
 export default function PropertyCard({ property }: PropertyCardProps) {
-  const defaultImage =
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80";
+  const [imgError, setImgError] = React.useState(false);
 
   // Image resolution logic
   const getPropertyImageUrl = (): string => {
+    if (imgError) return getFullImageUrl(null);
     const rawPath =
       property.property_images?.[0] || property.category?.image_url;
-    if (!rawPath) return defaultImage;
-    if (rawPath.startsWith("http")) return rawPath;
-    return `${API_BASE_URL}${rawPath}`;
+    return getFullImageUrl(rawPath);
   };
 
   // Category name logic
@@ -78,7 +78,10 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         (firstRoom.room_capacity.adults || 0) +
         (firstRoom.room_capacity.children || 0) ||
         firstRoom.room_capacity.persons ||
+        firstRoom?.max_guests ||
         2;
+    } else if (firstRoom?.max_guests) {
+      totalCapacity = firstRoom.max_guests;
     }
   }
 
@@ -90,13 +93,19 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.88}
-      onPress={() => router.push("/room-details")}
+      onPress={() =>
+        router.push({
+          pathname: "/property-details",
+          params: { id: property.id },
+        })
+      }
     >
       {/* Property Image Thumbnail */}
       <View style={styles.imageWrapper}>
         <Image
           source={{ uri: getPropertyImageUrl() }}
           style={styles.image}
+          onError={() => setImgError(true)}
         />
         <View style={styles.categoryBadge}>
           <Text style={styles.categoryText}>{categoryName}</Text>

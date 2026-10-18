@@ -1,7 +1,9 @@
+import LoadingDots from "@/components/ui/LoadingDots";
+import Toast, { type ToastType } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   ImageBackground,
@@ -16,8 +18,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const C = {
   primary: "#111827",
@@ -38,128 +38,6 @@ const C = {
   successText: "#15803D",
 };
 
-type ToastType = "success" | "error";
-
-function Toast({
-  message,
-  type,
-  visible,
-}: {
-  message: string;
-  type: ToastType;
-  visible: boolean;
-}) {
-  const translateY = useRef(new Animated.Value(-100)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0,
-          tension: 70,
-          friction: 11,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: -100,
-          duration: 240,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 240,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible]);
-
-  const isSuccess = type === "success";
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.toast,
-        {
-          transform: [{ translateY }],
-          opacity,
-          backgroundColor: isSuccess ? C.successBg : C.errorBg,
-          borderColor: isSuccess ? C.successBorder : C.errorBorder,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.toastDot,
-          { backgroundColor: isSuccess ? C.successText : C.error },
-        ]}
-      />
-      <Text
-        style={[
-          styles.toastText,
-          { color: isSuccess ? C.successText : C.error },
-        ]}
-      >
-        {message}
-      </Text>
-    </Animated.View>
-  );
-}
-
-function LoadingDots() {
-  const dots = [
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-  ];
-  useEffect(() => {
-    dots.forEach((dot, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 130),
-          Animated.timing(dot, {
-            toValue: -5,
-            duration: 260,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dot, {
-            toValue: 0,
-            duration: 260,
-            useNativeDriver: true,
-          }),
-          Animated.delay(520),
-        ]),
-      ).start(),
-    );
-  }, []);
-  return (
-    <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-      {dots.map((dot, i) => (
-        <Animated.View
-          key={i}
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: 3,
-            backgroundColor: C.primary,
-            transform: [{ translateY: dot }],
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
 export default function Login() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -176,38 +54,36 @@ export default function Login() {
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { login } = useAuth()
+  const { login } = useAuth();
 
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const keyboardAnim = useRef(new Animated.Value(0)).current;
+  const [keyboardAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        setKeyboardVisible(true);
+      () => {
         Animated.timing(keyboardAnim, {
           toValue: 1,
           duration: 250,
           useNativeDriver: false,
         }).start();
-      }
+      },
     );
     const hideSub = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      (e) => {
+      () => {
         Animated.timing(keyboardAnim, {
           toValue: 0,
           duration: 250,
           useNativeDriver: false,
-        }).start(() => setKeyboardVisible(false));
-      }
+        }).start();
+      },
     );
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [keyboardAnim]);
 
   const androidPadding = keyboardAnim.interpolate({
     inputRange: [0, 1],
@@ -217,15 +93,15 @@ export default function Login() {
   const brandOpacity = keyboardAnim.interpolate({
     inputRange: [0, 0.6],
     outputRange: [1, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
-  const fadeIn = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(50)).current;
-  const buttonScale = useRef(new Animated.Value(1)).current;
+  const [fadeIn] = useState(() => new Animated.Value(0));
+  const [slideUp] = useState(() => new Animated.Value(50));
+  const [buttonScale] = useState(() => new Animated.Value(1));
 
-  const identifierAnim = useRef(new Animated.Value(0)).current;
-  const passwordAnim = useRef(new Animated.Value(0)).current;
+  const [identifierAnim] = useState(() => new Animated.Value(0));
+  const [passwordAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
@@ -241,7 +117,10 @@ export default function Login() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, [fadeIn, slideUp, toastTimer]);
 
   const animateFocus = (anim: Animated.Value, focused: boolean) => {
     Animated.spring(anim, {
@@ -269,10 +148,15 @@ export default function Login() {
       if (typeof d.message === "string") return d.message;
       if (typeof d.error === "string") return d.error;
       if (Array.isArray(d.errors) && d.errors.length > 0) {
-        return d.errors[0]?.message || d.errors[0]?.msg || JSON.stringify(d.errors[0]);
+        return (
+          d.errors[0]?.message ||
+          d.errors[0]?.msg ||
+          JSON.stringify(d.errors[0])
+        );
       }
-      if (typeof d.error === "object" && d.error.message) return d.error.message;
-      
+      if (typeof d.error === "object" && d.error.message)
+        return d.error.message;
+
       // Fallback for unknown object structure
       if (typeof d === "object") {
         const firstValue = Object.values(d)[0];
@@ -348,10 +232,16 @@ export default function Login() {
 
   return (
     <ImageBackground
-      source={{ uri: "https://i.pinimg.com/736x/0c/2f/b1/0c2fb1e4f17ce9378aa6d6b5ee30a4f4.jpg" }}
+      source={{
+        uri: "https://i.pinimg.com/736x/0c/2f/b1/0c2fb1e4f17ce9378aa6d6b5ee30a4f4.jpg",
+      }}
       style={styles.root}
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
       <View style={styles.overlay} />
 
       <Toast
@@ -369,13 +259,27 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View style={[styles.brandContainer, {
-            opacity: brandOpacity,
-            height: keyboardAnim.interpolate({ inputRange: [0, 1], outputRange: [80, 0] }),
-            marginTop: keyboardAnim.interpolate({ inputRange: [0, 1], outputRange: [Platform.OS === "android" ? 40 : 50, 0] }),
-            marginBottom: keyboardAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }),
-            overflow: 'hidden'
-          }]}>
+          <Animated.View
+            style={[
+              styles.brandContainer,
+              {
+                opacity: brandOpacity,
+                height: keyboardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [80, 0],
+                }),
+                marginTop: keyboardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [Platform.OS === "android" ? 40 : 50, 0],
+                }),
+                marginBottom: keyboardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [16, 0],
+                }),
+                overflow: "hidden",
+              },
+            ]}
+          >
             <Text style={styles.brandTitle}>GetStay</Text>
             <Text style={styles.brandSub}>Premium Hotel Booking</Text>
           </Animated.View>
@@ -387,19 +291,22 @@ export default function Login() {
             ]}
           >
             <Text style={styles.sheetTitle}>Welcome Back</Text>
-            <Text style={styles.sheetSubtitle}>
-              Sign in to your account
-            </Text>
+            <Text style={styles.sheetSubtitle}>Sign in to your account</Text>
 
             {/* Email / Phone */}
             <View style={styles.fieldWrapper}>
-              <Animated.Text style={[styles.fieldLabel, { color: identifierLabelColor }]}>
+              <Animated.Text
+                style={[styles.fieldLabel, { color: identifierLabelColor }]}
+              >
                 EMAIL OR PHONE
               </Animated.Text>
               <Animated.View
                 style={[
                   styles.inputRow,
-                  { borderColor: identifierBorderColor, backgroundColor: identifierBgColor },
+                  {
+                    borderColor: identifierBorderColor,
+                    backgroundColor: identifierBgColor,
+                  },
                 ]}
               >
                 <Ionicons
@@ -424,13 +331,18 @@ export default function Login() {
 
             {/* Password */}
             <View style={styles.fieldWrapper}>
-              <Animated.Text style={[styles.fieldLabel, { color: passwordLabelColor }]}>
+              <Animated.Text
+                style={[styles.fieldLabel, { color: passwordLabelColor }]}
+              >
                 PASSWORD
               </Animated.Text>
               <Animated.View
                 style={[
                   styles.inputRow,
-                  { borderColor: passwordBorderColor, backgroundColor: passwordBgColor },
+                  {
+                    borderColor: passwordBorderColor,
+                    backgroundColor: passwordBgColor,
+                  },
                 ]}
               >
                 <Ionicons
@@ -463,12 +375,24 @@ export default function Login() {
               </Animated.View>
             </View>
 
+            {/* Forgot Password Link */}
+            <TouchableOpacity
+              style={styles.forgotBtn}
+              onPress={() => router.push("/forgot-password")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
+
             {/* CTA */}
             <Animated.View
-              style={{ transform: [{ scale: buttonScale }], marginTop: 12 }}
+              style={{ transform: [{ scale: buttonScale }], marginTop: 8 }}
             >
               <TouchableOpacity
-                style={[styles.ctaBtn, (!identifier || !password) && styles.ctaBtnDisabled]}
+                style={[
+                  styles.ctaBtn,
+                  (!identifier || !password) && styles.ctaBtnDisabled,
+                ]}
                 onPress={handleLogin}
                 activeOpacity={0.88}
                 disabled={isLoading || !identifier || !password}
@@ -495,12 +419,15 @@ export default function Login() {
               activeOpacity={0.7}
             >
               <Text style={styles.signInText}>
-                Don't have an account?{"  "}
+                {"Don't have an account?"}
+                {"  "}
                 <Text style={styles.signInLink}>Create one</Text>
               </Text>
             </TouchableOpacity>
           </Animated.View>
-          {Platform.OS === "android" && <Animated.View style={{ height: androidPadding }} />}
+          {Platform.OS === "android" && (
+            <Animated.View style={{ height: androidPadding }} />
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </ImageBackground>
@@ -597,6 +524,18 @@ const styles = StyleSheet.create({
   inputEmoji: { marginRight: 10 },
   input: { flex: 1, fontSize: 13, color: C.textPrimary, height: "100%" },
   eyeToggle: { padding: 4 },
+
+  forgotBtn: {
+    alignSelf: "flex-end",
+    marginBottom: 8,
+    marginTop: -2,
+    paddingVertical: 4,
+  },
+  forgotText: {
+    fontSize: 12,
+    color: C.textSecondary,
+    fontWeight: "600",
+  },
 
   /* CTA */
   ctaBtn: {

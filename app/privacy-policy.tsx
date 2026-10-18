@@ -11,9 +11,8 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const COLORS = {
@@ -308,7 +307,7 @@ export default function PrivacyPolicyScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Compliance Badges */}
+
           <View style={styles.badgeRow}>
             <View style={styles.complianceBadge}>
               <Ionicons name="shield-checkmark" size={12} color={COLORS.navy} />
@@ -322,7 +321,7 @@ export default function PrivacyPolicyScreen() {
           </Text>
         </View>
 
-        {/* THREE CORE PRIVACY PILLARS */}
+
         <View style={styles.pillarsContainer}>
           <Text style={styles.sectionLabel}>Our Privacy Commitments</Text>
           <View style={styles.pillarsRow}>
@@ -352,7 +351,7 @@ export default function PrivacyPolicyScreen() {
           </View>
         </View>
 
-        {/* TOC CHIPS */}
+
         <View style={styles.tocSection}>
           <Text style={styles.sectionLabel}>Browse Privacy Topics</Text>
           <ScrollView

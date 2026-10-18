@@ -5,11 +5,17 @@ export interface RoomCategory {
 export interface Room {
   room_category?: RoomCategory;
   name?: string;
+  base_price?: number;
 }
 
 export interface BookingItem {
   id: string;
   room?: Room;
+  number_of_rooms?: number;
+  base_price_booked?: number;
+  total_room_amount?: number;
+  room_tariff?: number;
+  total_guest_payment?: number;
 }
 
 export interface Property {
@@ -34,6 +40,7 @@ export interface Booking {
   payment_status: string; // 'Paid' | 'Unpaid' | 'Partial' | 'Refunded' etc.
   property: Property;
   booking_items: BookingItem[];
+  payment_method?: string;
 }
 
 export interface BookingsApiResponse {
